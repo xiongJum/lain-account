@@ -75,12 +75,14 @@ class Main():
             sql = f"INSERT INTO {self.table} ({cloumns}) VALUES ({import_value_str});"
             
             # 生成列名-值字典,并在下方进行校验数据
-            # print(sql)
+            import_value_list_copy = {keys[i]: p for i, p in enumerate(value) if p not in self.empty}
             try:
                 self.verify_common(import_value_list, mode_name=mode_name)
+                self.personal_verify(import_value_list_copy, mode_name=mode_name)
                 self.db.other(sql_str=sql)
             except sqlite3.Error as e:
                 # import_error_list.append(index)
+                print(sql)
                 print(f'失败的数据ID{value[0]} || 失败行号:{index+1} || 原因:数据库插入错误{e}')
                 continue
             except my_exception.DataRepeat as e:
@@ -105,6 +107,7 @@ class Main():
 
     def find(self, is_mapping=False, *args, **kwargs):
         
+        print(1,kwargs)
         mode_name = sys._getframe().f_code.co_name
         kwargs = self.method_common(kwargs, mode_name=mode_name)
 
@@ -136,6 +139,7 @@ class Main():
 
         # print(sql)
         # 返回查询结果
+        print(sql)
         return self.db.cx(sql_str=sql)
 
     def remove(self, id):
