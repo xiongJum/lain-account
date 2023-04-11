@@ -5,6 +5,7 @@ from config import Common
 from my_sqlite3 import Db
 from error import my_exception
 import sqlite3
+import numpy as np
 
 # 获取当前类名 self.__class__.__name__
 # 获取当前方法名  sys._getframe().f_code.co_name
@@ -33,61 +34,7 @@ class Main():
         self.float_cloumn = Common.FLOAT_CLOUMN
         # 不可修改的参数(数据库字段)
         self.prohibited_mod = Common.PROHIBITED_MOD
-        self.empty = ['None', 'null', None, '', ' ', "'None'"]
-    
-    def _import(self, keys, values):
-        mode_name = sys._getframe().f_code.co_name
-        # 生成缓存列表
-        cache = {key: dict() for key in keys if key in self.foreign_key}
-        # 使用列表生成式,拷贝列表
-        values_copy = [value for value in values]
-        
-        for index_1, value in enumerate(values_copy):
-            for index_2, param in enumerate(value):
-                # 批量将中文名称替换为ID
-                ## 如果此key为外键,则在config表中进行查询
-                if keys[index_2] in self.foreign_key:
-                    ## 如果存在缓存,则查询数据库,在缓存的字典中进行查找
-                    is_cache = param in cache[keys[index_2]].keys()
-                    config_id = cache[keys[index_2]][param] if is_cache else self.__config_id(param, keys[index_2])
-                    # print(values[index_1][index_2], config_id)
-                    ## 配置项id写入缓存和列表中
-                    values[index_1][index_2] = config_id
-                    cache[keys[index_2]][param] = config_id
-
-                # 对没有id的数据自动生成uuid
-                if keys[index_2] == self.id_name:
-                    data_id = values[index_1][index_2]
-                    values[index_1][index_2] = uuid.uuid4() if data_id in self.empty else data_id
-
-        for index, value in enumerate(values):
-            # 拼接支付串
-            import_value_list = [p if keys[index] in self.float_cloumn else f"'{p}'" for index, p in enumerate(value)]
-            import_value_list = {keys[i]: p for i, p in enumerate(import_value_list) if p not in self.empty}
-            # print(import_value_list)
-
-            import_value_str = ','.join(import_value_list.values())
-            # print(import_value_str)
-            cloumns = ','.join(import_value_list.keys())
-            # 将 None 或者 [] 替换为 null
-            import_value_str = import_value_str.replace("'None',", "null,").replace("None,", "null,")
-            import_value_str = import_value_str.replace("'[]',", "null,").replace("[],", "null,")
-            sql = f"INSERT INTO {self.table} ({cloumns}) VALUES ({import_value_str});"
-            
-            # 生成列名-值字典,并在下方进行校验数据
-            import_value_list_copy = {keys[i]: p for i, p in enumerate(value) if p not in self.empty}
-            try:
-                self.verify_common(import_value_list, mode_name=mode_name)
-                self.personal_verify(import_value_list_copy, mode_name=mode_name)
-                self.db.other(sql_str=sql)
-            except sqlite3.Error as e:
-                # import_error_list.append(index)
-                print(sql)
-                print(f'失败的数据ID{value[0]} || 失败行号:{index+1} || 原因:数据库插入错误{e}')
-                continue
-            except my_exception.DataRepeat as e:
-                print(f'失败的数据ID{value[0]} || 失败行号:{index+1} || 原因:程序判断{e}')
-                continue
+        self.empty = ['None', 'null', None, '', ' ', "'None'"] 
 
     def add(self, **kwargs):
 
@@ -107,7 +54,6 @@ class Main():
 
     def find(self, is_mapping=False, *args, **kwargs):
         
-        print(1,kwargs)
         mode_name = sys._getframe().f_code.co_name
         kwargs = self.method_common(kwargs, mode_name=mode_name)
 
@@ -139,7 +85,6 @@ class Main():
 
         # print(sql)
         # 返回查询结果
-        print(sql)
         return self.db.cx(sql_str=sql)
 
     def remove(self, id):

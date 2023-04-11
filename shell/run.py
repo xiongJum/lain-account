@@ -2,9 +2,10 @@ import sys, os
 sys.path.append(os.getcwd())
 
 from tabulate import tabulate
+import pandas
 from main import account, config, fund
 from config import Account, Config, Fund
-from export_Import.upload import Upload
+from export_Import.upload import OpenFile
 from export_Import.download import DownLoad
 
 
@@ -27,8 +28,13 @@ def find(param, config):
                 print(e)
             # 增加表名称,并通过表格形式打印出来
             tables_list = [table for table in tables]
-            tables_list.insert(0, config.DATABASE_ZH.values())
-            print(tabulate(tables_list, headers='firstrow', tablefmt='fancy_grid', showindex=True))
+
+            df = pandas.DataFrame(tables_list, columns=config.DATABASE_ZH.values())
+            # df = df.drop(['ID'], axis=1)
+            print(df)
+
+            # tables_list.insert(0, config.DATABASE_ZH.values())
+            # print(tabulate(tables_list, headers='firstrow', tablefmt='fancy_grid', showindex=True))
 
         if args in ['--new', '-n'] and len(sys.argv) > index:
             values = sys.argv[3:]
@@ -55,10 +61,10 @@ def find(param, config):
 
         if args in ['--upload', '-u'] and len(sys.argv) > index:
             # 上传
-            up = Upload(param, config)
+            # of = OpenFile()
             file_name = sys.argv[3] if sys_argv_len > 3 else False
             try:
-                up.upload_account(file_name=file_name)
+                param.open_file()
             except FileNotFoundError as e:
                 print("找不到文件,请检查路径是否正确", e)
 
